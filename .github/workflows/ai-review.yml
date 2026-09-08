@@ -1,0 +1,105 @@
+name: Reusable AI Code Review
+
+on:
+  workflow_call:
+    secrets:
+      GEMINI_API_KEY:
+        required: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write 
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR Diff (Exclude Lock files)
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git diff -w origin/${{ github.event.pull_request.base.ref }}...HEAD -- . ':(exclude)package-lock.json' ':(exclude)*.lock' ':(exclude)*.svg' ':(exclude)*.snap' ':(exclude).eslintrc*' > pr_diff.txt
+
+      - name: Run Code Review & Post Comment
+        uses: actions/github-script@v7
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        with:
+          script: |
+            const fs = require('fs');
+
+            const prTitle = context.payload.pull_request.title;
+            const prBody = context.payload.pull_request.body || "PR 설명이 없습니다.";
+    
+            const rawDiff = fs.readFileSync('pr_diff.txt', 'utf8');
+
+            const diffText = rawDiff
+              .split('\n')
+              .filter(line => !line.match(/^[+-]\s*(import|export)\s/)) 
+              .join('\n');
+
+            if (!diffText || diffText.trim().length === 0) return;
+
+            // 1. 텍스트 길이 제한 설정 (약 20,000자 = 대략 5,000~7,000 토큰)
+            const MAX_CHARS = 20000;
+            
+            if (diffText.length > MAX_CHARS) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `### 🤖 AI Code Review 건너뜀\n\n변경 사항이 너무 방대하여(${diffText.length}자) API 한도 초과 방지를 위해 리뷰를 생략합니다. PR을 더 작은 단위로 쪼개어 올리는 것을 권장합니다! 🚀`
+              });
+              return;
+            }
+
+            // 2. API 호출 로직
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+            
+            const prompt = `
+                You are a 10-year senior frontend developer. 
+                Analyze the following [PR Information] and [Git Diff] to provide a thorough, practical code review.
+            
+                ## 🎯 Review Criteria
+                1. Readability & Maintainability: Variable/function naming, component separation, state management patterns (especially modern stacks like TanStack Query).
+                2. Performance Optimization: Unnecessary re-renders, heavy computations.
+                3. Potential Bugs: Error handling, type safety, edge cases.
+                4. Web Accessibility (a11y): Semantic markup, ARIA attributes, keyboard navigation.
+                5. Comments & Intent: Respect the developer's intention based on existing comments or TODOs in the code.
+            
+                ## 📝 Output Guidelines
+                - Focus ONLY on the provided [Git Diff] context, not the entire codebase.
+                - Clearly specify the **[File Name] and [Function/Variable Name]** where the feedback applies, since exact line numbers cannot be tracked.
+                - Provide proposed improvements using standard markdown code blocks (\`\`\`typescript ... \`\`\`).
+                - If there are no issues and the code is well-written, leave a specific reason and praise the implementation.
+            
+                ---
+                ### [PR Information]
+                Title: ${prTitle}
+                Description: 
+                ${prBody}
+            
+                ### [Git Diff]
+                ${diffText}
+                `;
+
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            const data = await response.json();
+            const review = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (review) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: "### 🤖 AI Code Review\n\n" + review
+              });
+            }

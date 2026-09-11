@@ -25,6 +25,10 @@ on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   ai-review:
     if: github.event.pull_request.draft == false
@@ -32,6 +36,7 @@ jobs:
     secrets:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 ```
+
 
 설정이 완료되면 PR을 생성하거나 새로운 커밋을 푸시할 때마다 AI가 변경된 코드를 분석하여 PR에 코드 리뷰 코멘트를 남깁니다.
 

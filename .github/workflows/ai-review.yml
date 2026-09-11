@@ -62,25 +62,25 @@ jobs:
             }
 
             // 무료 API 사용량 관리를 위한 제한
-            # const MAX_CHARS = 20000;
+            // const MAX_CHARS = 20000;
 
-            # if (diffText.length > MAX_CHARS) {
-            #   await github.rest.issues.createComment({
-            #     owner: context.repo.owner,
-            #     repo: context.repo.repo,
-            #     issue_number: context.issue.number,
-            #     body: [
-            #       '### 🤖 AI Code Review 건너뜀',
-            #       '',
-            #       `변경 사항이 너무 방대하여 (${diffText.length.toLocaleString()}자)`,
-            #       '무료 API 사용량 관리를 위해 리뷰를 생략합니다.',
-            #       '',
-            #       'PR을 더 작은 단위로 나누는 것을 권장합니다.'
-            #     ].join('\n')
-            #   });
+            // if (diffText.length > MAX_CHARS) {
+            //   await github.rest.issues.createComment({
+            //     owner: context.repo.owner,
+            //     repo: context.repo.repo,
+            //     issue_number: context.issue.number,
+            //     body: [
+            //       '### 🤖 AI Code Review 건너뜀',
+            //       '',
+            //       `변경 사항이 너무 방대하여 (${diffText.length.toLocaleString()}자)`,
+            //       '무료 API 사용량 관리를 위해 리뷰를 생략합니다.',
+            //       '',
+            //       'PR을 더 작은 단위로 나누는 것을 권장합니다.'
+            //     ].join('\n')
+            //   });
 
-            #   return;
-            # }
+            //   return;
+            // }
 
             const prompt = `
             You are a senior frontend developer performing a practical pull request review.

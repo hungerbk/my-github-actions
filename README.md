@@ -43,7 +43,24 @@ jobs:
 > **Note**
 > 같은 저장소의 `pull_request` 이벤트만 리뷰합니다. Fork PR과 Dependabot이 실행한 작업은 건너뜁니다. `GEMINI_API_KEY`는 필수 설정입니다. 키 누락은 정상적인 리뷰 생략 사유로 처리하지 않습니다.
 
-### 3. 리뷰가 불필요한 PR
+### 3. 워크플로우 버전 선택
+
+공용 워크플로우의 업데이트를 자동으로 반영하려면 위 예제처럼 `@main`을 사용합니다. main 변경만으로 소비 저장소의 리뷰가 실행되지는 않으며, 다음 워크플로우 실행부터 최신 내용을 사용합니다.
+
+현재 버전을 유지하려면 `uses`의 `@main`을 전체 커밋 SHA로 바꿉니다. 새 버전을 적용할 때는 변경 내용을 확인하고 SHA를 직접 갱신합니다.
+
+**고정 버전 기준 — 2026-10-08 확인**
+
+- 커밋: [`24153bd6171ef719bd3fdaf1d71a81e42adc1290`](https://github.com/hungerbk/my-github-actions/commit/24153bd6171ef719bd3fdaf1d71a81e42adc1290)
+- 포함 내용: 브랜치명 환경 변수 전달, diff 파일의 러너 임시 폴더 저장, fork PR·Dependabot 실행 제외
+
+```yaml
+uses: hungerbk/my-github-actions/.github/workflows/ai-review.yml@24153bd6171ef719bd3fdaf1d71a81e42adc1290
+```
+
+이 SHA는 공용 워크플로우 버전을 고정합니다. 내부에서 참조하는 액션의 버전 태그와 외부 Gemini 서비스까지 고정하는 것은 아닙니다.
+
+### 4. 리뷰가 불필요한 PR
 
 PR 작성 시 리뷰 필요 여부를 판단하고, 동작 변경 없는 린트·포맷 정리처럼 리뷰가 불필요한 변경이면 PR 본문에 `[skip-ai-review]`를 포함합니다. AI에게 PR 작성을 맡길 때도 이 규칙을 적용할 수 있습니다.
 

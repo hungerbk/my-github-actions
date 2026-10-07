@@ -41,7 +41,7 @@ jobs:
 설정이 완료되면 PR을 생성하거나 새로운 커밋을 푸시할 때마다 AI가 변경된 코드를 분석하여 PR에 코드 리뷰 코멘트를 남깁니다.
 
 > **Note**
-> Fork에서 생성된 PR은 GitHub Actions의 보안 정책상 Repository Secret에 접근할 수 없어 AI 리뷰가 실행되지 않을 수 있습니다.
+> 같은 저장소의 `pull_request` 이벤트만 리뷰합니다. Fork PR과 Dependabot이 실행한 작업은 건너뜁니다. `GEMINI_API_KEY`는 필수 설정입니다. 키 누락은 정상적인 리뷰 생략 사유로 처리하지 않습니다.
 
 ### 3. 리뷰가 불필요한 PR
 
